@@ -8,7 +8,7 @@ const Signup = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    photo: "",
+    photo: null, // Store file instead of URL
   });
 
   const [error, setError] = useState(null);
@@ -17,6 +17,11 @@ const Signup = () => {
   // Handle form input change
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // Handle file upload
+  const handleFileChange = (e) => {
+    setFormData({ ...formData, photo: e.target.files[0] });
   };
 
   // Handle form submission
@@ -28,10 +33,19 @@ const Signup = () => {
       return;
     }
 
+    const formDataToSend = new FormData();
+    formDataToSend.append("fullname", formData.fullname);
+    formDataToSend.append("email", formData.email);
+    formDataToSend.append("password", formData.password);
+    formDataToSend.append("photo", formData.photo); // Attach file
+
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/signup", formData);
+      const res = await axios.post("http://localhost:5000/api/auth/signup", formDataToSend, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
       alert(res.data.message);
-      navigate("/signin"); // Redirect to signin page
+      navigate("/signin"); // Redirect after signup
     } catch (err) {
       setError(err.response?.data?.error || "Signup failed");
     }
@@ -41,7 +55,7 @@ const Signup = () => {
     <div className="flex justify-center items-center h-screen bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-md w-96">
         <h2 className="text-2xl font-bold mb-4">Sign Up</h2>
-        
+
         {error && <p className="text-red-500">{error}</p>}
 
         <form onSubmit={handleSubmit}>
@@ -82,17 +96,13 @@ const Signup = () => {
             required
           />
           <input
-            type="text"
+            type="file"
             name="photo"
-            placeholder="Profile Photo URL"
-            value={formData.photo}
-            onChange={handleChange}
+            accept="image/*"
+            onChange={handleFileChange}
             className="w-full p-2 border rounded mb-3"
           />
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-          >
+          <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
             Sign Up
           </button>
         </form>

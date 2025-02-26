@@ -1,77 +1,50 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ethers } from "ethers";
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const [wallet, setWallet] = useState({
-    address: "",
-    network: "",
-    balance: "",
-  });
+  const [user, setUser] = useState(null);
 
-  const [showDropdown, setShowDropdown] = useState(false);
-
-  const connectWallet = async () => {
-    if (!window.ethereum) {
-      alert("MetaMask not detected!");
-      return;
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
     }
+  }, []);
 
-    try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const address = await signer.getAddress();
-      const network = await provider.getNetwork();
-      const balance = ethers.formatEther(await provider.getBalance(address));
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const updatedUser = localStorage.getItem("user");
+      setUser(updatedUser ? JSON.parse(updatedUser) : null);
+    };
 
-      setWallet({
-        address,
-        network: network.name.toUpperCase(),
-        balance: balance.slice(0, 6) + " ETH",
-      });
-    } catch (error) {
-      console.error("Wallet connection failed", error);
-    }
-  };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    navigate("/");
+    localStorage.removeItem("user");
+    setUser(null);
+    navigate("/signin");
   };
 
   return (
     <nav className="bg-gray-900 text-white px-6 py-4 flex justify-between items-center">
-      <h1 className="text-xl font-bold">SellX</h1>
-
-      <button
-        onClick={connectWallet}
-        className="bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700"
-      >
-        {wallet.address ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}` : "Connect Wallet"}
-      </button>
+      <h1 className="text-xl font-bold cursor-pointer" onClick={() => navigate("/")}>
+        SellX
+      </h1>
 
       <div className="relative">
-        <button
-          className="bg-gray-800 px-4 py-2 rounded-lg"
-          onClick={() => setShowDropdown(!showDropdown)}
-        >
-          Profile
-        </button>
-        
-        {showDropdown && (
-          <div className="absolute right-0 mt-2 w-48 bg-white text-black rounded-lg shadow-lg p-4" onClick={(e) => e.stopPropagation()}>
-            <p><strong>Address:</strong> {wallet.address || "Not Connected"}</p>
-            <p><strong>Network:</strong> {wallet.network || "N/A"}</p>
-            <p><strong>Balance:</strong> {wallet.balance || "0 ETH"}</p>
-            <hr className="my-2" />
-            <button
-              onClick={handleLogout}
-              className="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700"
-            >
-              Logout
-            </button>
-          </div>
+        {user ? (
+          <button className="flex items-center space-x-2 bg-gray-800 px-4 py-2 rounded-lg">
+            <img src={user.photo || "https://via.placeholder.com/50"} alt="Profile" className="w-8 h-8 rounded-full" />
+            <span>{user.fullname || "User"}</span>
+          </button>
+        ) : (
+          <button onClick={() => navigate("/signin")} className="bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700">
+            Sign In
+          </button>
         )}
       </div>
     </nav>
